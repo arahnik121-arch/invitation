@@ -1,0 +1,34 @@
+# ВАРИАНТ Б: без Ingress, LoadBalancer и cert-manager — через Cloudflare Tunnel.
+# Подходит, если DNS домена corgi-joy.uk обслуживается Cloudflare.
+#
+# 1. Cloudflare Dashboard → Zero Trust → Networks → Tunnels → Create tunnel (cloudflared).
+# 2. Скопируй токен туннеля и создай секрет:
+#      kubectl -n invitation create secret generic cloudflared-token --from-literal=token='<ТОКЕН>'
+# 3. В туннеле добавь Public Hostname:
+#      best-invitation.corgi-joy.uk  →  HTTP  →  invitation.invitation.svc.cluster.local:80
+# 4. kubectl apply -f k8s/cloudflared.yaml
+# Cloudflare сам создаст DNS-запись и выдаст HTTPS.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: invitation
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: cloudflared }
+  template:
+    metadata:
+      labels: { app: cloudflared }
+    spec:
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest
+          args: ["tunnel", "--no-autoupdate", "run", "--token", "$(TUNNEL_TOKEN)"]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef: { name: cloudflared-token, key: token }
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }

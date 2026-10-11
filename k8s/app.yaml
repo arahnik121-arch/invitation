@@ -1,0 +1,85 @@
+# Всё приложение в одном неймспейсе — удалить потом одной командой:
+#   kubectl delete namespace invitation
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: invitation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: invitation
+  namespace: invitation
+  labels: { app: invitation }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: invitation }
+  template:
+    metadata:
+      labels: { app: invitation }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: web
+          image: ghcr.io/arahnik121-arch/invitation:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - secretRef:
+                name: invitation-mail
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 10m, memory: 48Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invitation
+  namespace: invitation
+spec:
+  selector: { app: invitation }
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: invitation
+  namespace: invitation
+  annotations:
+    # TLS-сертификат от Let's Encrypt через cert-manager (см. k8s/cluster-issuer.yaml)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  # Узнать свой класс: kubectl get ingressclass  (nginx, traefik, …)
+  ingressClassName: nginx
+  tls:
+    - hosts: [best-invitation.corgi-joy.uk]
+      secretName: invitation-tls
+  rules:
+    - host: best-invitation.corgi-joy.uk
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: invitation
+                port:
+                  name: http

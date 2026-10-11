@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DARK MATTER · Приглашение для Екатерины</title>
+  <meta name="description" content="Персональная экспозиция. Один посетитель. Один экскурсовод.">
+  <meta name="theme-color" content="#000000">
+  <meta property="og:title" content="DARK MATTER · Приглашение для Екатерины">
+  <meta property="og:description" content="Персональная экспозиция из света, пространства и звука.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Unbounded:wght@300;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="light" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="logo" href="#" aria-label="Dark Matter — приглашение">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <span class="logo-text">DARK<br>MATTER</span>
+    </a>
+    <nav class="nav" aria-label="Разделы">
+      <span class="nav-item" data-step-label="0">ЭКСПОЗИЦИЯ</span>
+      <span class="nav-item" data-step-label="1">ВОПРОС</span>
+      <span class="nav-item" data-step-label="2">ДАТА</span>
+      <span class="nav-item" data-step-label="3">БИЛЕТ</span>
+    </nav>
+    <span class="topbar-ticket">ПРИГЛАШЕНИЕ № 001</span>
+  </header>
+
+  <main>
+    <!-- 0. Интро -->
+    <section class="scene is-active" data-step="0" aria-labelledby="t0">
+      <p class="eyebrow">ПЕРСОНАЛЬНАЯ ЭКСПОЗИЦИЯ</p>
+      <h1 id="t0" class="title">
+        <span class="line">Свет,</span>
+        <span class="line">пространство</span>
+        <span class="line">и&nbsp;мы</span>
+      </h1>
+      <p class="lead">
+        Екатерина, в&nbsp;Берлине есть место, где темнота бархатная, а&nbsp;свет&nbsp;— живой.
+        Я хочу показать его тебе. Но&nbsp;сначала&nbsp;— один очень важный вопрос.
+      </p>
+      <dl class="facts">
+        <div><dt>ПОСЕТИТЕЛЬ</dt><dd>Екатерина</dd></div>
+        <div><dt>ЭКСКУРСОВОД</dt><dd>Твой муж</dd></div>
+        <div><dt>АДРЕС</dt><dd>Köpenicker Chaussee 46</dd></div>
+      </dl>
+      <button class="btn btn-solid" data-next>ВОЙТИ <span aria-hidden="true">→</span></button>
+    </section>
+
+    <!-- 1. Вопрос -->
+    <section class="scene" data-step="1" aria-labelledby="t1">
+      <p class="eyebrow">ЗАЛ 01 · ИНТЕРАКТИВНАЯ ИНСТАЛЛЯЦИЯ</p>
+      <h2 id="t1" class="title title-q">Пойдёшь со&nbsp;мной на&nbsp;свидание?</h2>
+      <p class="lead small" id="q-hint">Посетителям разрешено нажимать на&nbsp;любые кнопки.</p>
+      <div class="answers" id="answers">
+        <button class="btn btn-solid btn-yes" id="btn-yes">ДА</button>
+        <button class="btn btn-ghost btn-no" id="btn-no" type="button">НЕТ</button>
+      </div>
+      <p class="caption" id="no-caption" aria-live="polite"></p>
+    </section>
+
+    <!-- 2. Дата и пожелания -->
+    <section class="scene scene-wide" data-step="2" aria-labelledby="t2">
+      <div class="col">
+        <p class="eyebrow">ЗАЛ 02 · ВЫБОР ВРЕМЕНИ</p>
+        <h2 id="t2" class="title title-md">Выбери дату</h2>
+        <p class="lead small">
+          Понедельник и&nbsp;вторник музей закрыт&nbsp;— эти дни погашены.
+          Билеты куплю я, тебе остаётся только выбрать.
+        </p>
+
+        <div class="calendar" id="calendar">
+          <div class="cal-head">
+            <button class="cal-nav" id="cal-prev" type="button" aria-label="Предыдущий месяц">←</button>
+            <span class="cal-title" id="cal-title" aria-live="polite"></span>
+            <button class="cal-nav" id="cal-next" type="button" aria-label="Следующий месяц">→</button>
+          </div>
+          <div class="cal-dow" aria-hidden="true">
+            <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
+          </div>
+          <div class="cal-grid" id="cal-grid" role="grid" aria-labelledby="cal-title"></div>
+        </div>
+      </div>
+
+      <form class="col form" id="rsvp" novalidate>
+        <div class="field">
+          <span class="label">ВЫБРАННАЯ ДАТА</span>
+          <output class="picked" id="picked">— не выбрана —</output>
+          <span class="hours" id="hours"></span>
+        </div>
+
+        <fieldset class="field">
+          <legend class="label">КОГДА УДОБНЕЕ</legend>
+          <div class="chips" id="slots">
+            <label class="chip"><input type="radio" name="slot" value="Днём"><span>ДНЁМ</span></label>
+            <label class="chip"><input type="radio" name="slot" value="Ближе к вечеру" checked><span>БЛИЖЕ К ВЕЧЕРУ</span></label>
+            <label class="chip"><input type="radio" name="slot" value="Поздним вечером"><span>ПОЗДНИМ ВЕЧЕРОМ</span></label>
+          </div>
+        </fieldset>
+
+        <label class="field">
+          <span class="label">ПОЖЕЛАНИЯ К СВИДАНИЮ</span>
+          <textarea id="wishes" name="wishes" rows="5" maxlength="1500"
+            placeholder="Ужин после? Какой ресторан? Дресс-код? Цветы? Пиши всё — экскурсовод прочитает."></textarea>
+          <span class="counter"><span id="wish-count">0</span> / 1500</span>
+        </label>
+
+        <!-- ловушка для ботов -->
+        <input type="text" name="website" id="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+
+        <button class="btn btn-solid btn-block" id="submit" type="submit" disabled>ПОДТВЕРДИТЬ</button>
+        <p class="caption" id="form-msg" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <!-- 3. Билет -->
+    <section class="scene" data-step="3" aria-labelledby="t3">
+      <p class="eyebrow">ЗАЛ 03 · ВЫХОД ЧЕРЕЗ СЕРДЦЕ</p>
+      <h2 id="t3" class="title title-md">Дата зафиксирована</h2>
+      <article class="ticket" aria-label="Билет">
+        <div class="ticket-main">
+          <span class="ticket-brand">DARK MATTER · BERLIN</span>
+          <span class="ticket-kind">ВХОДНОЙ БИЛЕТ · 2 ПЕРСОНЫ</span>
+          <strong class="ticket-date" id="ticket-date"></strong>
+          <span class="ticket-slot" id="ticket-slot"></span>
+          <span class="ticket-names">ЕКАТЕРИНА + ТВОЙ МУЖ</span>
+        </div>
+        <div class="ticket-stub" aria-hidden="true">
+          <span>№ 001</span>
+          <span class="barcode"></span>
+        </div>
+      </article>
+      <p class="lead small" id="done-msg">Подтверждение улетело тебе на&nbsp;почту. Я уже бегу за&nbsp;билетами.</p>
+      <button class="btn btn-ghost" id="restart" type="button">ВЫБРАТЬ ДРУГУЮ ДАТУ</button>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>KÖPENICKER CHAUSSEE 46 · 10317 BERLIN</span>
+    <span>СДЕЛАНО С ЛЮБОВЬЮ</span>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
