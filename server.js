@@ -172,11 +172,19 @@ function json(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
-function serveStatic(req, res) {
-  let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
+// Путь запроса без query, с декодированием; никогда не бросает исключений.
+// ("//", "//x", битые %-последовательности и т.п. от сканеров не должны ронять сервер.)
+function pathOf(req) {
+  const raw = String(req.url || "/").split("?")[0].split("#")[0];
+  let p;
+  try { p = decodeURIComponent(raw); } catch { p = raw; }
+  return "/" + p.replace(/\\/g, "/").replace(/^\/+/, "");
+}
+
+function serveStatic(req, res, p) {
   if (p.endsWith("/")) p += "index.html";
   const file = path.normalize(path.join(PUBLIC_DIR, p));
-  if (!file.startsWith(PUBLIC_DIR)) return json(res, 403, { ok: false });
+  if (file !== PUBLIC_DIR && !file.startsWith(PUBLIC_DIR + path.sep)) return json(res, 403, { ok: false });
   fs.readFile(file, (err, buf) => {
     if (err) {
       // любой неизвестный путь → главная
@@ -244,15 +252,24 @@ module.exports = { buildMails };
 if (require.main !== module) return;
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, "http://x");
-  if (url.pathname === "/healthz") return json(res, 200, { ok: true });
-  if (url.pathname === "/api/rsvp") {
-    if (req.method !== "POST") return json(res, 405, { ok: false });
-    return handleRsvp(req, res).catch(err => { console.error(err); json(res, 500, { ok: false }); });
+  try {
+    const p = pathOf(req);
+    if (p === "/healthz") return json(res, 200, { ok: true });
+    if (p === "/api/rsvp") {
+      if (req.method !== "POST") return json(res, 405, { ok: false });
+      return handleRsvp(req, res).catch(err => { console.error(err); if (!res.headersSent) json(res, 500, { ok: false }); });
+    }
+    if (req.method !== "GET" && req.method !== "HEAD") return json(res, 405, { ok: false });
+    serveStatic(req, res, p);
+  } catch (err) {
+    console.error("Ошибка обработки запроса", req.url, err);
+    if (!res.headersSent) json(res, 400, { ok: false });
   }
-  if (req.method !== "GET" && req.method !== "HEAD") return json(res, 405, { ok: false });
-  serveStatic(req, res);
 });
+
+// Последний рубеж: залогировать и продолжить работу, а не падать целиком.
+process.on("uncaughtException", err => console.error("uncaughtException:", err));
+process.on("unhandledRejection", err => console.error("unhandledRejection:", err));
 
 server.listen(PORT, () => {
   console.log(`Приглашение работает на :${PORT}${DRY_RUN ? " (DRY_RUN: письма только в лог)" : ""}`);
