@@ -40,7 +40,7 @@
     function build() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
       W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = W * DPR; canvas.height = H * DPR;
+      canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       const small = W < 700;
       const nx = small ? 13 : 23, nz = small ? 7 : 9;
@@ -81,6 +81,9 @@
       const k = r => 1 - Math.pow(1 - r, dt * 60);
       mouse.x += (mouse.tx - mouse.x) * k(0.04);
       mouse.y += (mouse.ty - mouse.y) * k(0.04);
+      // Safari может отдать размер холста 0 при первом запуске и не всегда шлёт resize —
+      // сверяем размер в каждом кадре.
+      if (canvas.clientWidth !== W || canvas.clientHeight !== H || canvas.width !== Math.round(W * DPR)) build();
       ctx.clearRect(0, 0, W, H);
 
       const heart = mode === 3;
