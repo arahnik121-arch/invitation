@@ -129,6 +129,15 @@
           <span class="ticket-kind">ВХОДНОЙ БИЛЕТ · 2 ПЕРСОНЫ</span>
           <strong class="ticket-date" id="ticket-date"></strong>
           <span class="ticket-slot" id="ticket-slot"></span>
+          <div class="countdown" id="countdown" aria-live="off">
+            <span class="cd-label">ДО СВИДАНИЯ</span>
+            <div class="cd-cells">
+              <span class="cd-cell"><b id="cd-d">0</b><i>ДН</i></span>
+              <span class="cd-cell"><b id="cd-h">00</b><i>Ч</i></span>
+              <span class="cd-cell"><b id="cd-m">00</b><i>МИН</i></span>
+              <span class="cd-cell"><b id="cd-s">00</b><i>СЕК</i></span>
+            </div>
+          </div>
           <span class="ticket-names">ЕКАТЕРИНА + ТВОЙ МУЖ</span>
         </div>
         <div class="ticket-stub" aria-hidden="true">
@@ -137,7 +146,10 @@
         </div>
       </article>
       <p class="lead small" id="done-msg">Подтверждение улетело тебе на&nbsp;почту. Я уже бегу за&nbsp;билетами.</p>
-      <button class="btn btn-ghost" id="restart" type="button">ВЫБРАТЬ ДРУГУЮ ДАТУ</button>
+      <div class="ticket-actions">
+        <a class="btn btn-solid" id="ics-link" href="#">ДОБАВИТЬ В КАЛЕНДАРЬ</a>
+        <button class="btn btn-ghost" id="restart" type="button">ВЫБРАТЬ ДРУГУЮ ДАТУ</button>
+      </div>
     </section>
   </main>
 

@@ -48,11 +48,13 @@ function parseDate(s) {
 /* ---------------- Письма ---------------- */
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-function ics(dateStr) {
+// Ориентировочное время начала для выбранной части дня (по берлинскому времени)
+const SLOT_HOUR = { "Днём": 14, "Ближе к вечеру": 17, "Поздним вечером": 20 };
+
+function ics(dateStr, slot) {
   const d = dateStr.replace(/-/g, "");
-  const next = new Date(dateStr + "T00:00:00Z");
-  next.setUTCDate(next.getUTCDate() + 1);
-  const end = next.toISOString().slice(0, 10).replace(/-/g, "");
+  const h = SLOT_HOUR[slot] || 17;
+  const pad = n => String(n).padStart(2, "0");
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
   return [
     "BEGIN:VCALENDAR",
@@ -60,14 +62,36 @@ function ics(dateStr) {
     "PRODID:-//best-invitation//RU",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
+    "BEGIN:VTIMEZONE",
+    "TZID:Europe/Berlin",
+    "BEGIN:DAYLIGHT",
+    "TZOFFSETFROM:+0100",
+    "TZOFFSETTO:+0200",
+    "TZNAME:CEST",
+    "DTSTART:19700329T020000",
+    "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+    "END:DAYLIGHT",
+    "BEGIN:STANDARD",
+    "TZOFFSETFROM:+0200",
+    "TZOFFSETTO:+0100",
+    "TZNAME:CET",
+    "DTSTART:19701025T030000",
+    "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+    "END:STANDARD",
+    "END:VTIMEZONE",
     "BEGIN:VEVENT",
     `UID:date-${d}@best-invitation.corgi-joy.uk`,
     `DTSTAMP:${stamp}`,
-    `DTSTART;VALUE=DATE:${d}`,
-    `DTEND;VALUE=DATE:${end}`,
+    `DTSTART;TZID=Europe/Berlin:${d}T${pad(h)}0000`,
+    `DTEND;TZID=Europe/Berlin:${d}T${pad(Math.min(h + 3, 23))}0000`,
     "SUMMARY:Свидание · DARK MATTER Berlin",
     "LOCATION:DARK MATTER\\, Köpenicker Chaussee 46\\, 10317 Berlin",
-    "DESCRIPTION:Световая экспозиция для двоих.",
+    `DESCRIPTION:Световая экспозиция для двоих. ${slot || ""} (время ориентировочное).`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    "TRIGGER:-PT3H",
+    "DESCRIPTION:Через 3 часа — свидание в DARK MATTER ❤",
+    "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
     "",
@@ -95,7 +119,7 @@ function buildMails({ date, slot, wishes }) {
   const hours = HOURS[new Date(date + "T00:00:00Z").getUTCDay()];
   const wishesHtml = wishes ? esc(wishes).replace(/\n/g, "<br>") : "<span style=\"color:#8a8a88\">— без пожеланий, полностью доверяет тебе —</span>";
   const big = `<tr><td style="padding:18px 30px 6px;font-size:28px;line-height:1.15;text-transform:uppercase;font-weight:bold;">${esc(label)}</td></tr>`;
-  const attachments = [{ filename: "svidanie.ics", content: ics(date), contentType: "text/calendar; charset=utf-8" }];
+  const attachments = [{ filename: "svidanie.ics", content: ics(date, slot), contentType: "text/calendar; charset=utf-8" }];
 
   const toHim = {
     from: MAIL_FROM,
@@ -255,6 +279,19 @@ const server = http.createServer((req, res) => {
   try {
     const p = pathOf(req);
     if (p === "/healthz") return json(res, 200, { ok: true });
+    if (p === "/api/ics") {
+      const q = new URLSearchParams(String(req.url).split("?")[1] || "");
+      const date = q.get("date");
+      if (!parseDate(date)) return json(res, 400, { ok: false, error: "Неверная дата" });
+      const slot = SLOTS.has(q.get("slot")) ? q.get("slot") : "Ближе к вечеру";
+      res.writeHead(200, {
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": 'inline; filename="svidanie.ics"',
+        "Cache-Control": "no-store",
+        ...SECURITY_HEADERS,
+      });
+      return res.end(ics(date, slot));
+    }
     if (p === "/api/rsvp") {
       if (req.method !== "POST") return json(res, 405, { ok: false });
       return handleRsvp(req, res).catch(err => { console.error(err); if (!res.headersSent) json(res, 500, { ok: false }); });
